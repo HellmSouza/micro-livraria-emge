@@ -52,6 +52,27 @@ app.get('/product/:id', (req, res, next) => {
         }
     });
 });
+app.get('/AdicionaLivros/:id', (req, res, next) => {
+    inventory.AdicionarInventario({ id: req.params.id }, (err, product) => {
+        if (err) {
+            console.error(err);
+            res.status(500).send({ error: 'something failed :(' });
+        } else {
+            res.json(product);
+        }
+    });
+});
+app.get('/RemoveLivros/:id', (req, res, next) => {
+    inventory.RemoverInventario({ id: req.params.id }, (err, product) => {
+        if (err) {
+            console.error(err);
+            res.status(500).send({ error: 'something failed :(' });
+        } else {
+            res.json(product);
+        }
+    });
+});
+
 /**
  * Inicia o router
  */

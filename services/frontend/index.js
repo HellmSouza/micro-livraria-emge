@@ -16,7 +16,7 @@ function newBook(book) {
                 <div class="content book" data-id="${book.id}">
                     <div class="book-meta">
                         <p class="is-size-4">R$${book.price.toFixed(2)}</p>
-                        <p class="is-size-6">Disponível em estoque: 5</p>
+                        <p class="is-size-6 quant">Disponível em estoque: ${book.quantity}</p>
                         <h4 class="is-size-3 title">${book.name}</h4>
                         <p class="subtitle">${book.author}</p>
                     </div>
@@ -28,14 +28,14 @@ function newBook(book) {
                             <a class="button button-shipping is-info" data-id="${book.id}"> Calcular Frete </a>
                         </div>
                     </div>
-                    <button class="button button-buy is-success is-fullwidth">Comprar</button>
+                    <button class="button botaobuy is-success is-fullwidth" data-id=" ${book.id} "> Comprar </button>
                 </div>
             </div>
         </div>`;
     return div;
 }
 
-function calculateShipping(id, cep) {
+function calculateShipping(cep) {
     fetch('http://localhost:3000/shipping/' + cep)
         .then((data) => {
             if (data.ok) {
@@ -51,10 +51,48 @@ function calculateShipping(id, cep) {
             console.error(err);
         });
 }
+function AtualizarEstoque(quantidade, id){
+
+    if (quantidade <= 0){
+
+        $(".botaobuy")[id].setAttribute("disabled", "");
+
+    }else {
+
+        $(".botaobuy")[id].removeAttribute("disabled", "");
+
+    }
+}
+function DecrementarEstoque(id) {
+    fetch('http://localhost:3000/RemoveLivros/' + id)
+        .then((data) => {
+            if (data.ok) {
+                id--
+                return data.json();
+            }
+            throw data.statusText;
+        })
+        .then(function (data) {
+            if (data.quantity >= 0){
+                let tag = document.querySelectorAll(`.book .quant`)[id];
+                var text = document.createTextNode(`Disponível em estoque: ${data.quantity}`);
+                tag.replaceChild(text, tag.childNodes[0]);
+            }else {
+
+                swal('Erro', 'Não existe inventário restante!', 'error');
+            }
+
+            AtualizarEstoque(data.quantity, id);
+        })
+        .catch((err) => {
+            swal('Erro', ' Algo deu errado!', 'error');
+            console.error(err);
+        });
+}
+
 
 document.addEventListener('DOMContentLoaded', function () {
     const books = document.querySelector('.books');
-
     fetch('http://localhost:3000/products')
         .then((data) => {
             if (data.ok) {
@@ -66,19 +104,23 @@ document.addEventListener('DOMContentLoaded', function () {
             if (data) {
                 data.forEach((book) => {
                     books.appendChild(newBook(book));
+
+                    AtualizarEstoque(book.quantity, book.id - 1);
                 });
 
                 document.querySelectorAll('.button-shipping').forEach((btn) => {
                     btn.addEventListener('click', (e) => {
                         const id = e.target.getAttribute('data-id');
                         const cep = document.querySelector(`.book[data-id="${id}"] input`).value;
-                        calculateShipping(id, cep);
+                        calculateShipping(cep);
                     });
                 });
 
-                document.querySelectorAll('.button-buy').forEach((btn) => {
-                    btn.addEventListener('click', (e) => {
-                        swal('Compra de livro', 'Sua compra foi realizada com sucesso', 'success');
+                document.querySelectorAll('.botaobuy').forEach((btn) => {
+                    btn.addEventListener('click', (e) => {                    
+                        const id = e.target.getAttribute('data-id');
+                        DecrementarEstoque(id);
+                        swal('Compra de livros', 'Compra realizada com sucesso!', 'success');
                     });
                 });
             }
